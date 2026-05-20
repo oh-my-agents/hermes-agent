@@ -86,6 +86,8 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     # when model.auth_mode=entra_id is selected; key-based azure-foundry
     # users never pay this import.
     "provider.azure_identity": ("azure-identity==1.25.3",),
+    # Official Google GenAI SDK — only loaded when provider=google-genai.
+    "provider.google_genai": ("google-genai==2.4.0",),
 
     # ─── Web search backends ───────────────────────────────────────────────
     "search.exa": ("exa-py==2.10.2",),

@@ -1228,6 +1228,21 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
             agent._client_log_context(),
         )
         return client
+    if agent.provider == "google-genai":
+        from agent.google_genai_adapter import GoogleGenAIClient
+
+        safe_kwargs = {
+            k: v for k, v in client_kwargs.items()
+            if k in {"api_key", "base_url", "default_headers", "timeout"}
+        }
+        client = GoogleGenAIClient(**safe_kwargs)
+        _ra().logger.info(
+            "Google GenAI SDK client created (%s, shared=%s) %s",
+            reason,
+            shared,
+            agent._client_log_context(),
+        )
+        return client
     if agent.provider == "gemini":
         from agent.gemini_native_adapter import GeminiNativeClient, is_native_gemini_base_url
 

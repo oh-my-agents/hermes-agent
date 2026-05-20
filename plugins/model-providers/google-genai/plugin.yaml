@@ -1,0 +1,5 @@
+name: google-genai-provider
+kind: model-provider
+version: 1.0.0
+description: Google AI Studio via the official google-genai Python SDK
+author: Nous Research
