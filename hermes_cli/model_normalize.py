@@ -86,6 +86,7 @@ _STRIP_VENDOR_ONLY_PROVIDERS: frozenset[str] = frozenset({
 # Providers whose native naming is authoritative -- pass through unchanged.
 _AUTHORITATIVE_NATIVE_PROVIDERS: frozenset[str] = frozenset({
     "gemini",
+    "google-genai",
     "huggingface",
 })
 
