@@ -288,17 +288,19 @@ def _build_gemini_contents(messages: List[Dict[str, Any]]) -> tuple[List[Dict[st
             continue
 
         if role in {"tool", "function"}:
-            contents.append(
-                {
-                    "role": "user",
-                    "parts": [
-                        _translate_tool_result_to_gemini(
-                            msg,
-                            tool_name_by_call_id=tool_name_by_call_id,
-                        )
-                    ],
-                }
-            )
+            part = _translate_tool_result_to_gemini(msg, tool_name_by_call_id=tool_name_by_call_id)
+            # Gemini requires all functionResponse parts for one model turn to
+            # live in a single user turn (count must match functionCall count).
+            # Merge consecutive tool messages rather than creating separate turns.
+            if (
+                contents
+                and contents[-1]["role"] == "user"
+                and contents[-1]["parts"]
+                and "functionResponse" in contents[-1]["parts"][0]
+            ):
+                contents[-1]["parts"].append(part)
+            else:
+                contents.append({"role": "user", "parts": [part]})
             continue
 
         gemini_role = "model" if role == "assistant" else "user"
