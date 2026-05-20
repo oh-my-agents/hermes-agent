@@ -216,7 +216,12 @@ class GoogleGenAIClient(GeminiNativeClient):
         # is unused — SDK handles its own transport.
         super().__init__(api_key=api_key, base_url=base_url, default_headers=default_headers, timeout=timeout)
         genai = _get_sdk()
-        self._sdk_client = genai.Client(api_key=api_key)
+        # Pass base_url to SDK so custom proxies (sub2api, etc.) are respected.
+        # self.base_url is normalised by the parent (strips trailing /openai).
+        self._sdk_client = genai.Client(
+            api_key=api_key,
+            http_options={"base_url": self.base_url},
+        )
         self._sdk_timeout = timeout
 
     def _create_chat_completion(
