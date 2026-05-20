@@ -195,8 +195,30 @@ def _iter_sdk_stream(sdk_stream: Any, model: str) -> Iterator[_GeminiStreamChunk
             yield _make_stream_chunk(model=model, finish_reason=finish_reason)
 
 
+_KNOWN_API_VERSIONS = ("v1beta", "v1alpha", "v1")
+
+
+def _split_api_version(base_url: str) -> tuple[str, str]:
+    """Split a base_url that may already contain an API version suffix.
+
+    google-genai SDK constructs: {base_url}/{api_version}/models/...
+    If base_url already ends with e.g. '/v1beta', the SDK would produce
+    '.../v1beta/v1beta/models/...' — a doubled path that 404s.
+
+    Returns (stripped_base_url, api_version) so the SDK receives them
+    separately and builds the correct single-segment path.
+    """
+    url = base_url.rstrip("/")
+    for ver in _KNOWN_API_VERSIONS:
+        if url.endswith("/" + ver):
+            return url[: -len("/" + ver)], ver
+    return url, "v1beta"
+
+
 class GoogleGenAIClient(GeminiNativeClient):
-    """OpenAI-compatible client backed by the official google-genai SDK.
+    """Client backed by the official google-genai SDK for direct Google endpoints,
+    with automatic fallback to OpenAI-compatible format for third-party proxies
+    (sub2api, etc.) that don't speak Gemini native protocol.
 
     Subclasses GeminiNativeClient so existing isinstance checks in
     auxiliary_client.py and AsyncGeminiNativeClient wrapping continue
@@ -213,14 +235,15 @@ class GoogleGenAIClient(GeminiNativeClient):
         **_: Any,
     ) -> None:
         # Initialise parent to pass isinstance checks; parent's httpx.Client
-        # is unused — SDK handles its own transport.
+        # is reused for the OpenAI-compat proxy fallback path.
         super().__init__(api_key=api_key, base_url=base_url, default_headers=default_headers, timeout=timeout)
         genai = _get_sdk()
-        # Pass base_url to SDK so custom proxies (sub2api, etc.) are respected.
-        # self.base_url is normalised by the parent (strips trailing /openai).
+        # google-genai SDK constructs: {base_url}/{api_version}/models/{model}:{method}
+        # Strip a trailing api_version segment from base_url so it isn't doubled.
+        sdk_base, api_version = _split_api_version(self.base_url)
         self._sdk_client = genai.Client(
             api_key=api_key,
-            http_options={"base_url": self.base_url},
+            http_options={"base_url": sdk_base, "api_version": api_version},
         )
         self._sdk_timeout = timeout
 
@@ -262,7 +285,6 @@ class GoogleGenAIClient(GeminiNativeClient):
 
         config_kwargs: Dict[str, Any] = {}
         if request.get("systemInstruction"):
-            # SDK accepts a plain text string for system_instruction
             parts = request["systemInstruction"].get("parts") or []
             text = " ".join(p.get("text", "") for p in parts if isinstance(p, dict)).strip()
             if text:
