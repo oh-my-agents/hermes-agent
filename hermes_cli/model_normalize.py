@@ -104,6 +104,8 @@ _MATCHING_PREFIX_STRIP_PROVIDERS: frozenset[str] = frozenset({
     "arcee",
     "ollama-cloud",
     "custom",
+    "gemini",
+    "xai",
 })
 
 # Providers whose APIs require lowercase model IDs.  Xiaomi's
