@@ -211,6 +211,18 @@ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
         transport="bedrock_converse",
         auth_type="aws_sdk",
     ),
+    # Google AI Studio via the official google-genai Python SDK. Mirrors the
+    # auth.py PROVIDER_REGISTRY entry and the plugins/model-providers/google-genai
+    # profile. models.dev keys Google as "google" (see PROVIDER_TO_MODELS_DEV),
+    # which has no "google-genai" entry — without this overlay the catalog can't
+    # resolve the id and doctor reports it "unknown" despite it being registered.
+    "google-genai": HermesOverlay(
+        transport="openai_chat",
+        auth_type="api_key",
+        extra_env_vars=("GOOGLE_GENAI_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"),
+        base_url_override="https://generativelanguage.googleapis.com/v1beta",
+        base_url_env_var="GOOGLE_GENAI_BASE_URL",
+    ),
 }
 
 
